@@ -1,7 +1,7 @@
 """LQR, iLQR and MPC."""
 
 import numpy as np
-
+import scipy.linalg
 
 def simulate_dynamics(env, x, u, dt=1e-5):
     """Step simulator to see how state changes.
@@ -28,6 +28,10 @@ def simulate_dynamics(env, x, u, dt=1e-5):
       If you return x you will need to solve a different equation in
       your LQR controller.
     """
+
+    env._step(u, dt)
+
+
     return np.zeros(x.shape)
 
 
@@ -105,4 +109,23 @@ def calc_lqr_input(env, sim_env):
     u: np.array
       The command to execute at this point.
     """
+
+
+    """Solve the discrete time lqr controller.
+    x[k+1] = A x[k] + B u[k]
+     
+    cost = sum x[k].T*Q*x[k] + u[k].T*R*u[k]
+    """
+    
+    A=approximate_A(env, x, u, delta=1e-5, dt=1e-5)
+    B=approximate_B(env, x, u, delta=1e-5, dt=1e-5)
+
+    
+
+    X = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
+    #compute the LQR gain
+    K = np.matrix(scipy.linalg.inv(B.T*X*B+R)*(B.T*X*A))
+    eigVals, eigVecs = scipy.linalg.eig(A-B*K)
+    return K, X, eigVals
+
     return np.ones((2,))
