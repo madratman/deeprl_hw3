@@ -110,22 +110,20 @@ def calc_lqr_input(env, sim_env):
       The command to execute at this point.
     """
 
-
-    """Solve the discrete time lqr controller.
-    x[k+1] = A x[k] + B u[k]
-     
-    cost = sum x[k].T*Q*x[k] + u[k].T*R*u[k]
-    """
-    
+    # get the values for the matrices
+    x=env.state
+    u=0.1 # doesn't really matter which value in this case, because dynamics are linear so it doesn't affect estimation of A and B
     A=approximate_A(env, x, u, delta=1e-5, dt=1e-5)
     B=approximate_B(env, x, u, delta=1e-5, dt=1e-5)
+    Q=env.Q
+    R=env.R
 
-    
+    # solve ARE equation, discrete time
+    P = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
 
-    X = np.matrix(scipy.linalg.solve_discrete_are(A, B, Q, R))
     #compute the LQR gain
-    K = np.matrix(scipy.linalg.inv(B.T*X*B+R)*(B.T*X*A))
-    eigVals, eigVecs = scipy.linalg.eig(A-B*K)
-    return K, X, eigVals
+    K = np.matrix(scipy.linalg.inv(B.T.dot(P).dot(B).dot(R)).dot(B.T.dot(P).dot(A)))
+    
+    u=-K.dot(x)
 
-    return np.ones((2,))
+    return u
