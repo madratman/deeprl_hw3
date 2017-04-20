@@ -59,7 +59,7 @@ def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
       The A matrix for the dynamics at state x and command u.
     """
     # store the original environment
-    env0=env
+    env0=copy.deepcopy(env)
 
     # initialize matrix A
     A=np.zeros([4,4])
@@ -121,7 +121,7 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     B: np.array
       The B matrix for the dynamics at state x and command u.
     """
-    env0=env
+    env0=copy.deepcopy(env)
 
     # initialize matrix A
     B=np.zeros([4,4])
