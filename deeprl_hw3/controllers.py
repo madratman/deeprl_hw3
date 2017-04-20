@@ -29,8 +29,8 @@ def simulate_dynamics(env, x, u, dt=1e-5):
       your LQR controller.
     """
 
-    env._step(u, dt)
-
+    xnew, _, _, _, = env._step(u, dt)
+    xdot=(xnew-x)/dt
 
     return np.zeros(x.shape)
 
@@ -58,7 +58,44 @@ def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
     A: np.array
       The A matrix for the dynamics at state x and command u.
     """
-    return np.zeros((x.shape[0], x.shape[0]))
+    # store the original environment
+    env0=env
+
+    # initialize matrix A
+    A=np.zeros([4,4])
+
+    # baseline vector at x0 and u0
+    x_k0=simulate_dynamics(env, x, u, dt=1e-5)
+
+    env=env0
+    x_changed=x
+    x_changed[0]+=delta
+    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    A[0,:]=delta_x
+
+    env=env0
+    x_changed=x
+    x_changed[1]+=delta
+    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    A[1,:]=delta_x
+
+    env=env0
+    x_changed=x
+    x_changed[2]+=delta
+    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    A[2,:]=delta_x
+
+    env=env0
+    x_changed=x
+    x_changed[3]+=delta
+    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    A[3,:]=delta_x
+
+    return A
 
 
 def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
@@ -84,7 +121,43 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     B: np.array
       The B matrix for the dynamics at state x and command u.
     """
-    return np.zeros((x.shape[0], u.shape[0]))
+    env0=env
+
+    # initialize matrix A
+    B=np.zeros([4,4])
+
+    # baseline vector at x0 and u0
+    x_k0=simulate_dynamics(env, x, u, dt=1e-5)
+
+    env=env0
+    u_changed=u
+    u_changed[0]+=delta
+    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    B[0,:]=delta_x
+
+    env=env0
+    u_changed=u
+    u_changed[1]+=delta
+    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    B[1,:]=delta_x
+
+    env=env0
+    u_changed=u
+    u_changed[2]+=delta
+    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    B[2,:]=delta_x
+
+    env=env0
+    u_changed=u
+    u_changed[3]+=delta
+    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
+    delta_x=(x_k1-x_k0)/delta
+    B[3,:]=delta_x
+
+    return B
 
 
 def calc_lqr_input(env, sim_env):
@@ -109,12 +182,14 @@ def calc_lqr_input(env, sim_env):
     u: np.array
       The command to execute at this point.
     """
-
+    
     # get the values for the matrices
     x=env.state
     u=0.1 # doesn't really matter which value in this case, because dynamics are linear so it doesn't affect estimation of A and B
-    A=approximate_A(env, x, u, delta=1e-5, dt=1e-5)
-    B=approximate_B(env, x, u, delta=1e-5, dt=1e-5)
+    sim_env=env
+    A=approximate_A(sim_env, x, u, delta=1e-5, dt=1e-5)
+    sim_env=env # do I really have to set this, or are the differences negligible?
+    B=approximate_B(sim_env, x, u, delta=1e-5, dt=1e-5)
     Q=env.Q
     R=env.R
 
