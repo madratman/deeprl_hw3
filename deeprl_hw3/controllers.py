@@ -135,6 +135,8 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     delta_x=(x_k1-x_k0)/delta
     B[:,0]=delta_x
 
+    # TODO: CHANGE B ESTIMATION TO TAKE INTO ACCOUNT SHAPE OF THE MATRIX USING 2 MOTORS -- HERE THERES ONLY ONE
+
     return B
 
 
