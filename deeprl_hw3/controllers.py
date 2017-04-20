@@ -124,38 +124,16 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     env0=copy.deepcopy(env)
 
     # initialize matrix A
-    B=np.zeros([4,4])
+    B=np.zeros([4,1])
 
     # baseline vector at x0 and u0
     x_k0=simulate_dynamics(env, x, u, dt=1e-5)
 
     env=env0
-    u_changed=u
-    u_changed[0]+=delta
-    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
+    u+=delta
+    x_k1=dt*simulate_dynamics(env, x, u, dt=1e-5)+x_changed
     delta_x=(x_k1-x_k0)/delta
-    B[0,:]=delta_x
-
-    env=env0
-    u_changed=u
-    u_changed[1]+=delta
-    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    B[1,:]=delta_x
-
-    env=env0
-    u_changed=u
-    u_changed[2]+=delta
-    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    B[2,:]=delta_x
-
-    env=env0
-    u_changed=u
-    u_changed[3]+=delta
-    x_k1=dt*simulate_dynamics(env, x, u_changed, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    B[3,:]=delta_x
+    B[:,0]=delta_x
 
     return B
 
