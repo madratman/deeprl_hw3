@@ -32,7 +32,7 @@ def simulate_dynamics(env, x, u, dt=1e-5):
     xnew, _, _, _, = env._step(u, dt)
     xdot=(xnew-x)/dt
 
-    return np.zeros(x.shape)
+    return xdot
 
 
 def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
@@ -175,8 +175,11 @@ def calc_lqr_input(env, sim_env):
     P = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
 
     #compute the LQR gain
-    K = np.matrix(scipy.linalg.inv(B.T.dot(P).dot(B).dot(R)).dot(B.T.dot(P).dot(A)))
+    K = np.matrix( scipy.linalg.inv(R).dot(B.T.dot(X)) )
     
     u=-K.dot(x)
 
     return u
+
+if __name__ == '__main__':
+    
