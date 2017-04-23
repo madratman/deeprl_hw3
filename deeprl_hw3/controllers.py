@@ -2,6 +2,10 @@
 
 import numpy as np
 import scipy.linalg
+import gym
+from IPython import embed
+from arm_env import TwoLinkArmEnv
+import copy
 
 def simulate_dynamics(env, x, u, dt=1e-5):
     """Step simulator to see how state changes.
@@ -9,7 +13,7 @@ def simulate_dynamics(env, x, u, dt=1e-5):
     Parameters
     ----------
     env: gym.core.Env
-      The environment you are try to control. In this homework the 2
+      The environment you are trying to control. In this homework the 2
       link arm.
     x: np.array
       The state to test. When approximating A you will need to perturb
@@ -28,12 +32,11 @@ def simulate_dynamics(env, x, u, dt=1e-5):
       If you return x you will need to solve a different equation in
       your LQR controller.
     """
-
+    env.state = x
     xnew, _, _, _, = env._step(u, dt)
-    xdot=(xnew-x)/dt
+    xdot = (xnew - x)/dt
 
     return xdot
-
 
 def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
     """Approximate A matrix using finite differences.
@@ -59,44 +62,23 @@ def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
       The A matrix for the dynamics at state x and command u.
     """
     # store the original environment
-    env0=copy.deepcopy(env)
+    env_orig = copy.deepcopy(env)
+    x_orig = copy.deepcopy(x)
 
     # initialize matrix A
-    A=np.zeros([4,4])
+    A = np.zeros([4,4])
 
     # baseline vector at x0 and u0
-    x_k0=simulate_dynamics(env, x, u, dt=1e-5)
+    x_k0 = simulate_dynamics(env, x, u, dt=1e-5)
 
-    env=env0
-    x_changed=x
-    x_changed[0]+=delta
-    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    A[0,:]=delta_x
-
-    env=env0
-    x_changed=x
-    x_changed[1]+=delta
-    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    A[1,:]=delta_x
-
-    env=env0
-    x_changed=x
-    x_changed[2]+=delta
-    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    A[2,:]=delta_x
-
-    env=env0
-    x_changed=x
-    x_changed[3]+=delta
-    x_k1=dt*simulate_dynamics(env, x_changed, u, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    A[3,:]=delta_x
-
+    for i in range(env.observation_space.shape[0]):
+      env = copy.deepcopy(env_orig)
+      x_perturbed = copy.deepcopy(x_orig)
+      x_perturbed[i] += delta
+      x_k1 = dt * simulate_dynamics(env, x_perturbed, u, dt=1e-5) + x_perturbed
+      delta_x = (x_k1 - x_k0)/delta
+      A[i,:] = delta_x
     return A
-
 
 def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     """Approximate B matrix using finite differences.
@@ -121,24 +103,26 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     B: np.array
       The B matrix for the dynamics at state x and command u.
     """
-    env0=copy.deepcopy(env)
+    env_orig = copy.deepcopy(env)
+    u_orig = copy.deepcopy(u)
 
-    # initialize matrix A
-    B=np.zeros([4,1])
+    # initialize matrix B
+    B = np.zeros([4,2])
 
     # baseline vector at x0 and u0
-    x_k0=simulate_dynamics(env, x, u, dt=1e-5)
+    x_k0 = simulate_dynamics(env, x, u, dt=1e-5)
 
-    env=env0
-    u+=delta
-    x_k1=dt*simulate_dynamics(env, x, u, dt=1e-5)+x_changed
-    delta_x=(x_k1-x_k0)/delta
-    B[:,0]=delta_x
+    for i in range(env.action_space.shape[0]):
+      env = copy.deepcopy(env_orig)
+      u_perturbed = copy.deepcopy(u_orig)
+      u_perturbed[i] += delta
+      x_k1 = dt * simulate_dynamics(env, x, u_perturbed, dt=1e-5) + x
+      delta_x = (x_k1-x_k0)/delta
+      B[:,i] = delta_x
 
     # TODO: CHANGE B ESTIMATION TO TAKE INTO ACCOUNT SHAPE OF THE MATRIX USING 2 MOTORS -- HERE THERES ONLY ONE
 
     return B
-
 
 def calc_lqr_input(env, sim_env):
     """Calculate the optimal control input for the given state.
@@ -164,24 +148,21 @@ def calc_lqr_input(env, sim_env):
     """
     
     # get the values for the matrices
-    x=env.state
-    u=0.1 # doesn't really matter which value in this case, because dynamics are linear so it doesn't affect estimation of A and B
+    x = env.state
+    u = np.array([0.0, 0.0]) # doesn't really matter which value in this case, because dynamics are linear so it doesn't affect estimation of A and B
     sim_env=env
-    A=approximate_A(sim_env, x, u, delta=1e-5, dt=1e-5)
+    A = approximate_A(sim_env, x, u, delta=1e-5, dt=1e-5)
     sim_env=env # do I really have to set this, or are the differences negligible?
-    B=approximate_B(sim_env, x, u, delta=1e-5, dt=1e-5)
-    Q=env.Q
-    R=env.R
+    B = approximate_B(sim_env, x, u, delta=1e-5, dt=1e-5)
+    Q = env.Q
+    R = env.R
 
-    # solve ARE equation, discrete time
-    P = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
+    # Solve ARE equation, discrete time
+    X = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
 
-    #compute the LQR gain
-    K = np.matrix( scipy.linalg.inv(R).dot(B.T.dot(X)) )
+    # Compute the LQR gain
+    K = np.matrix( scipy.linalg.inv(R).dot(B.T.dot(X)))
     
     u=-K.dot(x)
 
     return u
-
-if __name__ == '__main__':
-    
