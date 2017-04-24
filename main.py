@@ -7,18 +7,23 @@ import copy
 import time
 
 env = gym.make("TwoLinkArm-v0")
+sim_env = gym.make("TwoLinkArm-v0")
 initial_state = env.reset()
 env.render()
-time.sleep(1)
 
-dt = 1e-5
+dt = 1e-3
 total_reward = 0
 num_steps = 0
 while True:
-  u = calc_lqr_input(env, copy.deepcopy(env))
+  if num_steps == 0:
+    u = calc_lqr_input(env, sim_env)
+  else:
+    u = calc_lqr_input(env, sim_env, prev_u)
   u = np.array(u)
   u = np.reshape(u, env.action_space.shape[0])
-  nextstate, reward, is_terminal, debug_info = env.step(u,dt)
+  prev_u = u
+  print("Control u = {}, num_steps={}, reward={}".format(str(u), num_steps, total_reward))
+  nextstate, reward, is_terminal, debug_info = env._step(u,dt)
   env.render()
 
   total_reward += reward
@@ -27,4 +32,4 @@ while True:
   if is_terminal:
   	break
 
-  time.sleep(1)
+  time.sleep(0.3)
