@@ -3,7 +3,7 @@
 import numpy as np
 import scipy.linalg
 import gym
-from IPython import embed
+# from IPython import embed
 from arm_env import TwoLinkArmEnv
 import copy
 
@@ -70,10 +70,16 @@ def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
     x_k0 = simulate_dynamics(env, x, u, dt=1e-5)
 
     for i in range(env.observation_space.shape[0]):
+
       x_perturbed = copy.deepcopy(x_orig)
       x_perturbed[i] += delta
-      x_k1 = dt * simulate_dynamics(env, x_perturbed, u, dt=1e-5) + x_perturbed
-      delta_x = (x_k1 - x_k0)/delta
+      x_dot1 = simulate_dynamics(env, x_perturbed, u, dt=1e-5)
+
+      x_perturbed = copy.deepcopy(x_orig)
+      x_perturbed[i] -= delta
+      x_dot2 = simulate_dynamics(env, x_perturbed, u, dt=1e-5)
+
+      delta_x = (x_dot1 - x_dot2)/(2*delta)
       A[i,:] = delta_x
     return A
 
@@ -109,10 +115,16 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     x_k0 = simulate_dynamics(env, x, u, dt=1e-5)
 
     for i in range(env.action_space.shape[0]):
+
       u_perturbed = copy.deepcopy(u_orig)
       u_perturbed[i] += delta
-      x_k1 = dt * simulate_dynamics(env, x, u_perturbed, dt=1e-5) + x
-      delta_x = (x_k1-x_k0)/delta
+      x_dot1 = simulate_dynamics(env, x, u_perturbed, dt=1e-5)
+
+      u_perturbed = copy.deepcopy(u_orig)
+      u_perturbed[i] -= delta
+      x_dot2 = simulate_dynamics(env, x, u_perturbed, dt=1e-5)
+
+      delta_x = (x_dot1-x_dot2)/(2*delta)
       B[:,i] = delta_x
 
     # TODO: CHANGE B ESTIMATION TO TAKE INTO ACCOUNT SHAPE OF THE MATRIX USING 2 MOTORS -- HERE THERES ONLY ONE
@@ -146,17 +158,25 @@ def calc_lqr_input(env, sim_env, prev_u=None):
     x = env.state
     if prev_u is None:
       prev_u = np.array([0.0, 0.0])
-    u = prev_u # doesn't really matter which value in this case, because dynamics are linear so it doesn't affect estimation of A and B
+    u = prev_u
     A = approximate_A(sim_env, x, u, delta=1e-5, dt=1e-5)
     B = approximate_B(sim_env, x, u, delta=1e-5, dt=1e-5)
     Q = env.Q
     R = env.R
+
+    print x
+    print u
+    print A
+    print B
+    print Q
+    print R
 
     # Solve ARE equation, continuous time
     X = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
 
     # Compute the LQR gain
     K = np.matrix( scipy.linalg.inv(R).dot(B.T.dot(X)))
-    u = -K.dot(x - env.goal)
+    # u = -K.dot(x - env.goal)
+    u = -K.dot(x-env.goal)
 
     return u

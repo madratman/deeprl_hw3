@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-from IPython import embed
+# from IPython import embed
 import deeprl_hw3.arm_env
 from deeprl_hw3.controllers import calc_lqr_input
 import copy
@@ -14,8 +14,9 @@ env.render()
 dt = 1e-3
 total_reward = 0
 num_steps = 0
+
 while True:
-  if num_steps == 0:
+  if num_steps >= 0:
     u = calc_lqr_input(env, sim_env)
   else:
     u = calc_lqr_input(env, sim_env, prev_u)
