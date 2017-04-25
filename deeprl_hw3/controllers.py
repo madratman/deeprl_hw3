@@ -81,6 +81,7 @@ def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
 
       delta_x = (x_dot1 - x_dot2)/(2*delta)
       A[i,:] = delta_x
+      # comment
     return A
 
 def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
