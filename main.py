@@ -32,5 +32,3 @@ while True:
 
   if is_terminal:
   	break
-
-  time.sleep(0.3)
