@@ -2,6 +2,11 @@
 
 import numpy as np
 import scipy.linalg
+from deeprl_hw3.controllers import DELTA, DT
+
+LAMB_FACTOR=10
+EPS_CONVERGE=0.001
+LAMB_MAX=1000
 
 def simulate_dynamics_next(env, x, u, dt):
     """Step simulator to see how state changes.
@@ -30,7 +35,7 @@ def simulate_dynamics_next(env, x, u, dt):
   return xnew
 
 
-def cost_inter(env, x, u):
+def cost_inter(x, u):
   """intermediate cost function
 
   Parameters
@@ -111,11 +116,11 @@ def simulate(env, x0, U):
     # Run simulation with substeps
     for t in range(tN-1):
         X[t+1] = simulate_dynamics_next(env, X[t], U[t])
-        l,_,_,_,_,_ = cost(X[t], U[t])
+        l,_,_,_,_,_ = cost_inter(X[t], U[t])
         cost = cost + dt * l
 
     # Adjust for final cost, subsample trajectory
-    l_f,_,_ = cost_final(X[-1])
+    l_f,_,_ = cost_final(env,X[-1])
     cost = cost + l_f
   return X, cost
 
@@ -228,18 +233,18 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
   """
 
   tN = U.shape[0] # number of time steps
-  dof = self.arm.DOF # number of degrees of freedom of plant 
+  dof = 2 # number of degrees of freedom of plant 
   num_states = dof * 2 # number of states (position and velocity)
-  dt = self.arm.dt # time step
+  dt = env.dt # time step
 
   lamb = 1.0 # regularization parameter
   sim_new_trajectory = True
 
-  for ii in range(self.max_iter):
+  for ii in range(max_iter):
 
       if sim_new_trajectory == True: 
           # simulate forward using the current control trajectory
-          X, cost = self.simulate(x0, U)
+          X, cost = simulate(sim_env,x0, U)
           oldcost = np.copy(cost) # copy for exit condition check
 
           # now we linearly approximate the dynamics, and quadratically 
@@ -262,13 +267,13 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
               # linearized dx(t) = np.dot(A(t), x(t)) + np.dot(B(t), u(t))
               # f_x = np.eye + A(t)
               # f_u = B(t)
-              A = approximate_A(X[t], U[t])
-              B = approximate_B(X[t], U[t])
+              A = approximate_A(sim_env,X[t], U[t])
+              B = approximate_B(sim_env,X[t], U[t])
               f_x[t] = np.eye(num_states) + A * dt
               f_u[t] = B * dt
           
               (l[t], l_x[t], l_xx[t], l_u[t], 
-                  l_uu[t], l_ux[t]) = self.cost(X[t], U[t])
+                  l_uu[t], l_ux[t]) = cost_inter(X[t], U[t])
               l[t] *= dt
               l_x[t] *= dt
               l_xx[t] *= dt
@@ -276,7 +281,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
               l_uu[t] *= dt
               l_ux[t] *= dt
           # aaaand for final state
-          l[-1], l_x[-1], l_xx[-1] = self.cost_final(X[-1])
+          l[-1], l_x[-1], l_xx[-1] = cost_final(sim_env,X[-1])
 
           sim_new_trajectory = False
 
@@ -341,15 +346,15 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
           # to take a stab at the optimal control signal
           Unew[t] = U[t] + k[t] + np.dot(K[t], xnew - X[t]) # 7b)
           # given this u, find our next state
-          _,xnew = simulate_dynamics_next(xnew, Unew[t]) # 7c)
+          _,xnew = simulate_dynamics_next(sim_env,xnew, Unew[t],dt=DT) # 7c)
 
       # evaluate the new trajectory 
-      Xnew, costnew = self.simulate(x0, Unew)
+      Xnew, costnew = simulate(sim_env,x0, Unew,dt=DT)
 
       # Levenberg-Marquardt heuristic
       if costnew < cost: 
           # decrease lambda (get closer to Newton's method)
-          lamb /= self.lamb_factor
+          lamb /= LAMB_FACTOR
 
           X = np.copy(Xnew) # update trajectory 
           U = np.copy(Unew) # update control signal
@@ -361,16 +366,16 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
           # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
           #         " logLambda = %.1f"%np.log(lamb))
           # check to see if update is small enough to exit
-          if ii > 0 and ((abs(oldcost-cost)/cost) < self.eps_converge):
+          if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
               print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
                       " logLambda = %.1f"%np.log(lamb))
               break
 
       else: 
           # increase lambda (get closer to gradient descent)
-          lamb *= self.lamb_factor
+          lamb *= LAMB_FACTOR
           # print("cost: %.4f, increasing lambda to %.4f")%(cost, lamb)
-          if lamb > self.lamb_max: 
+          if lamb > LAMB_MAX: 
               print("lambda > max_lambda at iteration = %d;"%ii + 
                   " Cost = %.4f; logLambda = %.1f"%(cost, 
                                                     np.log(lamb)))
