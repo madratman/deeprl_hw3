@@ -4,7 +4,7 @@ import numpy as np
 import scipy.linalg
 
 
-def simulate_dynamics_next(env, x, u):
+def simulate_dynamics_next(env, x, u, dt):
     """Step simulator to see how state changes.
 
     Parameters
@@ -174,13 +174,13 @@ def approximate_A(env, x, u, delta=DELTA, dt=DT):
 
       x_perturbed = copy.copy(x_orig)
       x_perturbed[i] += delta
-      x_dot1 = simulate_dynamics(env, x_perturbed, u, dt=DT)
+      x_1 = simulate_dynamics_next(env, x_perturbed, u, dt=DT)
 
       x_perturbed = copy.copy(x_orig)
       x_perturbed[i] -= delta
-      x_dot2 = simulate_dynamics(env, x_perturbed, u, dt=DT)
+      x_2 = simulate_dynamics_next(env, x_perturbed, u, dt=DT)
 
-      delta_x = (x_dot1 - x_dot2)/(2*delta)
+      delta_x = (x_1 - x_2)/(2*delta)
       A[:,i] = delta_x
       # comment
     return A
@@ -217,13 +217,13 @@ def approximate_B(env, x, u, delta=DELTA, dt=DT):
 
       u_perturbed = copy.copy(u_orig)
       u_perturbed[i] += delta
-      x_dot1 = simulate_dynamics(env, x, u_perturbed, dt=DT)
+      x_1 = simulate_dynamics(env, x, u_perturbed, dt=DT)
 
       u_perturbed = copy.copy(u_orig)
       u_perturbed[i] -= delta
-      x_dot2 = simulate_dynamics(env, x, u_perturbed, dt=DT)
+      x_2 = simulate_dynamics(env, x, u_perturbed, dt=DT)
 
-      delta_x = (x_dot1-x_dot2)/(2*delta)
+      delta_x = (x_1-x_2)/(2*delta)
       B[:,i] = delta_x
 
     return B
