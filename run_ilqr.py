@@ -12,23 +12,22 @@ sim_env = gym.make(env_name)
 initial_state = env.reset()
 env.render()
 
-total_reward = 0
+total_cost = 0
 num_steps = 0
-n=50
+tN=50
 max_iter=100
 
-X, U, cost = ilqr(self, x0, U=None)
+x0 = copy.copy(env.state)
 
-while True:
-  
-  X
+X, U, cost = calc_lqr_input(env, sim_env, tN=tN, max_iter=max_iter)
 
-  print("Control u = {}, num_steps={}, reward={}".format(str(u), num_steps, total_reward))
-  nextstate, reward, is_terminal, debug_info = env.step(u)
+for i in range(tN):
+
+  print("Control u = {}, reward={}".format(str(u), total_cost))
+  x_next, cost_i, is_terminal, debug_info = env.step(U[i])
   env.render()
 
-  total_reward += reward
-  num_steps += 1
+  total_cost += cost_i
 
   if is_terminal:
     break
