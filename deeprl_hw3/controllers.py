@@ -79,7 +79,7 @@ def approximate_A(env, x, u, delta=DELTA, dt=DT):
       x_dot2 = simulate_dynamics(env, x_perturbed, u, dt=DT)
 
       delta_x = (x_dot1 - x_dot2)/(2*delta)
-      A[i,:] = delta_x
+      A[:,i] = delta_x
       # comment
     return A
 

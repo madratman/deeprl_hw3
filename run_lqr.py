@@ -2,7 +2,7 @@ import numpy as np
 import gym
 # from IPython import embed
 import deeprl_hw3.arm_env
-from deeprl_hw3.controllers import calc_lqr_input, DELTA, DT
+from deeprl_hw3.controllers import calc_lqr_input
 import copy
 import time
 
@@ -24,7 +24,7 @@ while True:
   u = np.reshape(u, env.action_space.shape[0])
   prev_u = u
   print("Control u = {}, num_steps={}, reward={}".format(str(u), num_steps, total_reward))
-  nextstate, reward, is_terminal, debug_info = env._step(u,DT)
+  nextstate, reward, is_terminal, debug_info = env.step(u)
   env.render()
 
   total_reward += reward
@@ -32,5 +32,3 @@ while True:
 
   if is_terminal:
   	break
-
-  time.sleep(0.3)
