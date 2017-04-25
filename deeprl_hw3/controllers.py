@@ -4,10 +4,12 @@ import numpy as np
 import scipy.linalg
 import gym
 # from IPython import embed
-from arm_env import TwoLinkArmEnv
 import copy
 
-def simulate_dynamics(env, x, u, dt=1e-5):
+DELTA = 1e-5
+DT = 1e-5
+
+def simulate_dynamics(env, x, u, dt=DT):
     """Step simulator to see how state changes.
 
     Parameters
@@ -32,13 +34,13 @@ def simulate_dynamics(env, x, u, dt=1e-5):
       If you return x you will need to solve a different equation in
       your LQR controller.
     """
-    env.state = x
+    x_orig = copy.copy(x)
+    env.state = x_orig
     xnew, _, _, _, = env._step(u, dt)
     xdot = (xnew - x)/dt
-
     return xdot
 
-def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
+def approximate_A(env, x, u, delta=DELTA, dt=DT):
     """Approximate A matrix using finite differences.
 
     Parameters
@@ -61,30 +63,27 @@ def approximate_A(env, x, u, delta=1e-5, dt=1e-5):
     A: np.array
       The A matrix for the dynamics at state x and command u.
     """
-    x_orig = copy.deepcopy(x)
+    x_orig = copy.copy(x)
 
     # initialize matrix A
     A = np.zeros([env.observation_space.shape[0],env.observation_space.shape[0]])
 
-    # baseline vector at x0 and u0
-    x_k0 = simulate_dynamics(env, x, u, dt=1e-5)
-
     for i in range(env.observation_space.shape[0]):
 
-      x_perturbed = copy.deepcopy(x_orig)
+      x_perturbed = copy.copy(x_orig)
       x_perturbed[i] += delta
-      x_dot1 = simulate_dynamics(env, x_perturbed, u, dt=1e-5)
+      x_dot1 = simulate_dynamics(env, x_perturbed, u, dt=DT)
 
-      x_perturbed = copy.deepcopy(x_orig)
+      x_perturbed = copy.copy(x_orig)
       x_perturbed[i] -= delta
-      x_dot2 = simulate_dynamics(env, x_perturbed, u, dt=1e-5)
+      x_dot2 = simulate_dynamics(env, x_perturbed, u, dt=DT)
 
       delta_x = (x_dot1 - x_dot2)/(2*delta)
       A[i,:] = delta_x
       # comment
     return A
 
-def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
+def approximate_B(env, x, u, delta=DELTA, dt=DT):
     """Approximate B matrix using finite differences.
 
     Parameters
@@ -107,28 +106,23 @@ def approximate_B(env, x, u, delta=1e-5, dt=1e-5):
     B: np.array
       The B matrix for the dynamics at state x and command u.
     """
-    u_orig = copy.deepcopy(u)
+    u_orig = copy.copy(u)
 
     # initialize matrix B
     B = np.zeros([env.observation_space.shape[0],env.action_space.shape[0]])
 
-    # baseline vector at x0 and u0
-    x_k0 = simulate_dynamics(env, x, u, dt=1e-5)
-
     for i in range(env.action_space.shape[0]):
 
-      u_perturbed = copy.deepcopy(u_orig)
+      u_perturbed = copy.copy(u_orig)
       u_perturbed[i] += delta
-      x_dot1 = simulate_dynamics(env, x, u_perturbed, dt=1e-5)
+      x_dot1 = simulate_dynamics(env, x, u_perturbed, dt=DT)
 
-      u_perturbed = copy.deepcopy(u_orig)
+      u_perturbed = copy.copy(u_orig)
       u_perturbed[i] -= delta
-      x_dot2 = simulate_dynamics(env, x, u_perturbed, dt=1e-5)
+      x_dot2 = simulate_dynamics(env, x, u_perturbed, dt=DT)
 
       delta_x = (x_dot1-x_dot2)/(2*delta)
       B[:,i] = delta_x
-
-    # TODO: CHANGE B ESTIMATION TO TAKE INTO ACCOUNT SHAPE OF THE MATRIX USING 2 MOTORS -- HERE THERES ONLY ONE
 
     return B
 
@@ -157,20 +151,11 @@ def calc_lqr_input(env, sim_env, prev_u=None):
     
     # get the values for the matrices
     x = env.state
-    if prev_u is None:
-      prev_u = np.array([0.0, 0.0])
-    u = prev_u
-    A = approximate_A(sim_env, x, u, delta=1e-5, dt=1e-5)
-    B = approximate_B(sim_env, x, u, delta=1e-5, dt=1e-5)
+    u = np.random.rand(2)
+    A = approximate_A(sim_env, x, u, delta=DELTA, dt=DT)
+    B = approximate_B(sim_env, x, u, delta=DELTA, dt=DT)
     Q = env.Q
     R = env.R
-
-    print x
-    print u
-    print A
-    print B
-    print Q
-    print R
     # sdgasf
     # Solve ARE equation, continuous time
     X = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
@@ -179,5 +164,12 @@ def calc_lqr_input(env, sim_env, prev_u=None):
     K = np.matrix( scipy.linalg.inv(R).dot(B.T.dot(X)))
     # u = -K.dot(x - env.goal)
     u = -K.dot(x-env.goal)
+
+    print x
+    print u
+    print A
+    print B
+    print Q
+    print R
 
     return u
