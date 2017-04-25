@@ -1,6 +1,5 @@
 """LQR, iLQR and MPC."""
 
-from deeprl_hw3.controllers import approximate_A, approximate_B
 import numpy as np
 import scipy.linalg
 
@@ -229,7 +228,7 @@ def approximate_B(env, x, u, delta=DELTA, dt=DT):
 
     return B
 
-    
+
 def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
     """Calculate the optimal control input for the given state.
 
