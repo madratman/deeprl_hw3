@@ -6,7 +6,7 @@ from deeprl_hw3.controllers import calc_lqr_input
 import copy
 import time
 
-env_name = 'TwoLinkArm-v0'
+env_name = 'TwoLinkArm-random-goal-v0'
 env = gym.make(env_name)
 sim_env = gym.make(env_name)
 initial_state = env.reset()
@@ -14,15 +14,15 @@ env.render()
 
 total_reward = 0
 num_steps = 0
+n=50
+max_iter=100
+
+X, U, cost = ilqr(self, x0, U=None)
 
 while True:
-  if num_steps >= 0:
-    u = calc_lqr_input(env, sim_env)
-  else:
-    u = calc_lqr_input(env, sim_env, prev_u)
-  u = np.array(u)
-  u = np.reshape(u, env.action_space.shape[0])
-  prev_u = u
+  
+  X
+
   print("Control u = {}, num_steps={}, reward={}".format(str(u), num_steps, total_reward))
   nextstate, reward, is_terminal, debug_info = env.step(u)
   env.render()
@@ -31,4 +31,6 @@ while True:
   num_steps += 1
 
   if is_terminal:
-  	break
+    break
+
+
