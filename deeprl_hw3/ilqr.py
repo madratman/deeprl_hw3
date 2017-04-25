@@ -5,130 +5,109 @@ import scipy.linalg
 
 
 def simulate_dynamics_next(env, x, u):
-    """Step simulator to see how state changes.
+  """Step simulator to see how state changes.
 
-    Parameters
-    ----------
-    env: gym.core.Env
-      The environment you are try to control. In this homework the 2
-      link arm.
-    x: np.array
-      The state to test. When approximating A you will need to perturb
-      this.
-    u: np.array
-      The command to test. When approximating B you will need to
-      perturb this.
+  Parameters
+  ----------
+  env: gym.core.Env
+    The environment you are try to control. In this homework the 2
+    link arm.
+  x: np.array
+    The state to test. When approximating A you will need to perturb
+    this.
+  u: np.array
+    The command to test. When approximating B you will need to
+    perturb this.
 
-    Returns
-    -------
-    next_x: np.array
-    """
+  Returns
+  -------
+  next_x: np.array
+  """
 
-    x_orig = copy.copy(x)
-    env.state = x_orig
-    xnew, _, _, _, = env._step(u, dt)
+  x_orig = copy.copy(x)
+  env.state = x_orig
+  xnew, _, _, _, = env._step(u, dt)
 
-    return xnew
+  return xnew
 
 
 def cost_inter(env, x, u):
-    """intermediate cost function
+  """intermediate cost function
 
-    Parameters
-    ----------
-    env: gym.core.Env
-      The environment you are try to control. In this homework the 2
-      link arm.
-    x: np.array
-      The state to test. When approximating A you will need to perturb
-      this.
-    u: np.array
-      The command to test. When approximating B you will need to
-      perturb this.
+  Parameters
+  ----------
+  env: gym.core.Env
+    The environment you are try to control. In this homework the 2
+    link arm.
+  x: np.array
+    The state to test. When approximating A you will need to perturb
+    this.
+  u: np.array
+    The command to test. When approximating B you will need to
+    perturb this.
 
-    Returns
-    -------
-    l, l_x, l_xx, l_u, l_uu, l_ux. The first term is the loss, where the remaining terms are derivatives respect to the
-    corresponding variables, ex: (1) l_x is the first order derivative d l/d x (2) l_xx is the second order derivative
-    d^2 l/d x^2
-    """
-    dof = u.shape[0]
-    num_states = x.shape[0]
+  Returns
+  -------
+  l, l_x, l_xx, l_u, l_uu, l_ux. The first term is the loss, where the remaining terms are derivatives respect to the
+  corresponding variables, ex: (1) l_x is the first order derivative d l/d x (2) l_xx is the second order derivative
+  d^2 l/d x^2
+  """
+  dof = u.shape[0]
+  num_states = x.shape[0]
 
-    l = np.sum(u**2)
-    # maybe change the cost function later to include how far away we are from the desired state (have to include input with Xgoal in this function)
+  l = np.sum(u**2)
+  # maybe change the cost function later to include how far away we are from the desired state (have to include input with Xgoal in this function)
 
-    # compute derivatives of cost
-    l_x = np.zeros(num_states)
-    l_xx = np.zeros((num_states, num_states))
-    l_u = 2 * u
-    l_uu = 2 * np.eye(dof)
-    l_ux = np.zeros((dof, num_states))
+  # compute derivatives of cost
+  l_x = np.zeros(num_states)
+  l_xx = np.zeros((num_states, num_states))
+  l_u = 2 * u
+  l_uu = 2 * np.eye(dof)
+  l_ux = np.zeros((dof, num_states))
 
-    # returned in an array for easy multiplication by time step 
-    return l, l_x, l_xx, l_u, l_uu, l_ux
+  # returned in an array for easy multiplication by time step 
+  return l, l_x, l_xx, l_u, l_uu, l_ux
 
 
 def cost_final(env, x):
-    """cost function of the last step
+  """cost function of the last step
 
-    Parameters
-    ----------
-    env: gym.core.Env
-      The environment you are try to control. In this homework the 2
-      link arm.
-    x: np.array
-      The state to test. When approximating A you will need to perturb
-      this.
+  Parameters
+  ----------
+  env: gym.core.Env
+    The environment you are try to control. In this homework the 2
+    link arm.
+  x: np.array
+    The state to test. When approximating A you will need to perturb
+    this.
 
-    Returns
-    -------
-    l, l_x, l_xx The first term is the loss, where the remaining terms are derivatives respect to the
-    corresponding variables
-    """
-    num_states = x.shape[0]
-    l_x = np.zeros((num_states))
-    l_xx = np.zeros((num_states, num_states))
+  Returns
+  -------
+  l, l_x, l_xx The first term is the loss, where the remaining terms are derivatives respect to the
+  corresponding variables
+  """
+  num_states = x.shape[0]
+  l_x = np.zeros((num_states))
+  l_xx = np.zeros((num_states, num_states))
 
-    weight = 1e4 # terminal position cost weight
+  weight = 1e4 # terminal position cost weight
 
-    err = env.state-env.goal
-    l = weight*np.sum(err**2)
+  err = env.state-env.goal
+  l = weight*np.sum(err**2)
 
-    l_x = 2*weight*(err)
-    l_xx = 2 * weight * np.eye(4)
-
-    # Final cost only requires these three values
-    return l, l_x, l_xx
-
-def cost(x, u):
-    """ the immediate state cost function """
-    # compute cost
-    dof = u.shape[0]
-    num_states = x.shape[0]
-
-    l = np.sum(u**2)
-
-    # compute derivatives of cost
-    l_x = np.zeros(num_states)
-    l_xx = np.zeros((num_states, num_states))
-    l_u = 2 * u
-    l_uu = 2 * np.eye(dof)
-    l_ux = np.zeros((dof, num_states))
-
-    # returned in an array for easy multiplication by time step 
-    return l, l_x, l_xx, l_u, l_uu, l_ux
-
+  l_x = 2*weight*(err)
+  l_xx = 2 * weight * np.eye(4)
+  # Final cost only requires these three values
+  return l, l_x, l_xx
 
 def simulate(env, x0, U):
-    
-    tN = U.shape[0]
-    num_states = x0.shape[0]
-    dt = env.dt
+  tN = U.shape[0]
+  num_states = x0.shape[0]
+  dt = env.dt
 
-    X = np.zeros((tN, num_states))
-    X[0] = x0
-    cost = 0
+  X = np.zeros((tN, num_states))
+  X[0] = x0
+  cost = 0
 
     # Run simulation with substeps
     for t in range(tN-1):
@@ -139,8 +118,7 @@ def simulate(env, x0, U):
     # Adjust for final cost, subsample trajectory
     l_f,_,_ = cost_final(X[-1])
     cost = cost + l_f
-
-    return X, cost
+  return X, cost
 
 def approximate_A(env, x, u, delta=DELTA, dt=DT):
     """Approximate A matrix using finite differences.
@@ -228,46 +206,27 @@ def approximate_B(env, x, u, delta=DELTA, dt=DT):
 
     return B
 
-
 def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
-    """Calculate the optimal control input for the given state.
+  """Calculate the optimal control input for the given state.
 
 
-    Parameters
-    ----------
-    env: gym.core.Env
-      This is the true environment you will execute the computed
-      commands on. Use this environment to get the Q and R values as
-      well as the state.
-    sim_env: gym.core.Env
-      A copy of the env class. Use this to simulate the dynamics when
-      doing finite differences.
-    tN: number of control steps you are going to execute
-    max_itr: max iterations for optmization
+  Parameters
+  ----------
+  env: gym.core.Env
+    This is the true environment you will execute the computed
+    commands on. Use this environment to get the Q and R values as
+    well as the state.
+  sim_env: gym.core.Env
+    A copy of the env class. Use this to simulate the dynamics when
+    doing finite differences.
+  tN: number of control steps you are going to execute
+  max_itr: max iterations for optmization
 
-    Returns
-    -------
-    U: np.array
-      The SEQUENCE of commands to execute. The size should be (tN, #parameters)
-    """
-
-    self.max_iter = max_iter
-    self.lamb_factor = 10
-    self.lamb_max = 1000
-    self.eps_converge = 0.001 # exit if relative improvement below threshold
-
-    old_target = [None, None]
-
-    return np.zeros((50, 2))
-
-def ilqr(self, x0, U=None): 
-  """ use iterative linear quadratic regulation to find a control 
-  sequence that minimizes the cost function 
-
-  x0 np.array: the initial state of the system
-  U np.array: the initial control trajectory dimensions = [dof, time]
+  Returns
+  -------
+  U: np.array
+    The SEQUENCE of commands to execute. The size should be (tN, #parameters)
   """
-  U = self.U if U is None else U
 
   tN = U.shape[0] # number of time steps
   dof = self.arm.DOF # number of degrees of freedom of plant 
@@ -304,7 +263,8 @@ def ilqr(self, x0, U=None):
               # linearized dx(t) = np.dot(A(t), x(t)) + np.dot(B(t), u(t))
               # f_x = np.eye + A(t)
               # f_u = B(t)
-              A, B = self.finite_differences(X[t], U[t])
+              A = approximate_A(X[t], U[t])
+              B = approximate_B(X[t], U[t])
               f_x[t] = np.eye(num_states) + A * dt
               f_u[t] = B * dt
           
@@ -382,7 +342,7 @@ def ilqr(self, x0, U=None):
           # to take a stab at the optimal control signal
           Unew[t] = U[t] + k[t] + np.dot(K[t], xnew - X[t]) # 7b)
           # given this u, find our next state
-          _,xnew = self.plant_dynamics(xnew, Unew[t]) # 7c)
+          _,xnew = simulate_dynamics_next(xnew, Unew[t]) # 7c)
 
       # evaluate the new trajectory 
       Xnew, costnew = self.simulate(x0, Unew)

@@ -2,7 +2,7 @@ import numpy as np
 import gym
 # from IPython import embed
 import deeprl_hw3.arm_env
-from deeprl_hw3.controllers import calc_lqr_input
+from deeprl_hw3.ilqr import calc_ilqr_input
 import copy
 import time
 
@@ -19,7 +19,7 @@ max_iter=100
 
 x0 = copy.copy(env.state)
 
-X, U, cost = calc_lqr_input(env, sim_env, tN=tN, max_iter=max_iter)
+X, U, cost = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter)
 
 for i in range(tN):
 
