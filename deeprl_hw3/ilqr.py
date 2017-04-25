@@ -4,6 +4,7 @@ import numpy as np
 import scipy.linalg
 from deeprl_hw3.controllers import DELTA, DT
 import copy
+from IPython import embed
 
 LAMB_FACTOR=10
 EPS_CONVERGE=0.001
@@ -248,7 +249,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
       if sim_new_trajectory == True: 
           # simulate forward using the current control trajectory
           X, cost = simulate(sim_env,x0, U)
-          oldcost = np.copy(cost) # copy for exit condition check
+          oldcost = copy.copy(cost) # copy for exit condition check
 
           # now we linearly approximate the dynamics, and quadratically 
           # approximate the cost function so we can use LQR methods 
@@ -283,7 +284,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
               l_u[t] *= dt
               l_uu[t] *= dt
               l_ux[t] *= dt
-          # aaaand for final state
+
           l[-1], l_x[-1], l_xx[-1] = cost_final(sim_env,X[-1])
 
           sim_new_trajectory = False
@@ -352,27 +353,28 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
           xnew = simulate_dynamics_next(sim_env,xnew, Unew[t],dt=DT) # 7c)
 
       # evaluate the new trajectory 
-      Xnew, costnew = simulate(sim_env,x0, Unew)
+      Xnew, costnew = simulate(sim_env, x0, Unew)
 
       # Levenberg-Marquardt heuristic
       if costnew < cost: 
-          # decrease lambda (get closer to Newton's method)
-          lamb /= LAMB_FACTOR
+        # decrease lambda (get closer to Newton's method)
+        lamb /= LAMB_FACTOR
 
-          X = np.copy(Xnew) # update trajectory 
-          U = np.copy(Unew) # update control signal
-          oldcost = np.copy(cost)
-          cost = np.copy(costnew)
+        X = copy.copy(Xnew) # update trajectory 
+        U = copy.copy(Unew) # update control signal
+        oldcost = copy.copy(cost)
+        cost = copy.copy(costnew)
 
-          sim_new_trajectory = True # do another rollout
+        sim_new_trajectory = True # do another rollout
 
-          # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
-          #         " logLambda = %.1f"%np.log(lamb))
-          # check to see if update is small enough to exit
-          if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
-              print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
-                      " logLambda = %.1f"%np.log(lamb))
-              break
+        # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
+        #         " logLambda = %.1f"%np.log(lamb))
+        # check to see if update is small enough to exit
+        # embed()
+        if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
+            print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
+                    " logLambda = %.1f"%np.log(lamb))
+            break
 
       else: 
           # increase lambda (get closer to gradient descent)

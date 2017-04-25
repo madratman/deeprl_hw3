@@ -7,7 +7,7 @@ import gym
 import copy
 
 DELTA = 1e-5
-DT = 1e-5
+DT = 1e-3
 
 def simulate_dynamics(env, x, u, dt=DT):
     """Step simulator to see how state changes.
