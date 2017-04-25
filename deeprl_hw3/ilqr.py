@@ -96,25 +96,34 @@ def cost_final(env, x):
     err = env.state-env.goal
     l = weight*np.sum(err**2)
 
-    l_x[0:1] = 2*weight
-
-    eps = 1e-4 # finite difference epsilon
-    # calculate second derivative with finite differences
-    for k in range(self.arm.DOF): 
-        veps = np.zeros(self.arm.DOF)
-        veps[k] = eps
-        d1 = wp * self.dif_end(x[0:self.arm.DOF] + veps)
-        d2 = wp * self.dif_end(x[0:self.arm.DOF] - veps)
-        l_xx[0:self.arm.DOF, k] = ((d1-d2) / 2.0 / eps).flatten()
-
-    l_xx[self.arm.DOF:self.arm.DOF*2, self.arm.DOF:self.arm.DOF*2] = 2 * wv * np.eye(self.arm.DOF)
+    l_x = 2*weight*(err)
+    l_xx = 2 * weight * np.eye(4)
 
     # Final cost only requires these three values
     return l, l_x, l_xx
 
 
 def simulate(env, x0, U):
-    return None
+    
+    tN = U.shape[0]
+    num_states = x0.shape[0]
+    dt = env.dt
+
+    X = np.zeros((tN, num_states))
+    X[0] = x0
+    cost = 0
+
+    # Run simulation with substeps
+    for t in range(tN-1):
+        X[t+1] = simulate_dynamics_next(env, X[t], U[t])
+        l,_,_,_,_,_ = self.cost(X[t], U[t])
+        cost = cost + dt * l
+
+    # Adjust for final cost, subsample trajectory
+    l_f,_,_ = self.cost_final(X[-1])
+    cost = cost + l_f
+
+    return X, cost
 
 
 def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
