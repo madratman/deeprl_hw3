@@ -170,7 +170,7 @@ def calc_lqr_input(env, sim_env, prev_u=None):
     print B
     print Q
     print R
-
+    # sdgasf
     # Solve ARE equation, continuous time
     X = np.matrix(scipy.linalg.solve_continuous_are(A, B, Q, R))
 
