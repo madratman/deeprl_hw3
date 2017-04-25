@@ -23,7 +23,7 @@ X, U, cost = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter)
 
 for i in range(tN):
 
-  print("Control u = {}, reward={}".format(str(u), total_cost))
+  print("Control u = {}, reward={}".format(str(U[i]), total_cost))
   x_next, cost_i, is_terminal, debug_info = env.step(U[i])
   env.render()
 
