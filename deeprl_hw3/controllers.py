@@ -151,7 +151,10 @@ def calc_lqr_input(env, sim_env, prev_u=None):
     
     # get the values for the matrices
     x = env.state
-    u = np.random.rand(2)
+    if prev_u==None:
+      u=np.array([0.0,0.0])
+    else:
+      u=prev_u
     A = approximate_A(sim_env, x, u, delta=DELTA, dt=DT)
     B = approximate_B(sim_env, x, u, delta=DELTA, dt=DT)
     Q = env.Q
