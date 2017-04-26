@@ -6,7 +6,6 @@ from keras.models import model_from_yaml
 import numpy as np
 import time
 
-
 def load_model(model_config_path, model_weights_path=None):
     """Load a saved model.
 
@@ -55,8 +54,42 @@ def generate_expert_training_data(expert, env, num_episodes=100, render=True):
       second contains a one-hot encoding of all of the actions chosen
       by the expert for those states.
     """
-    return np.zeros((4,)), np.zeros((2,))
 
+    states_arr = np.empty((0, 4))
+    actions_arr = np.empty((0, 2))
+
+    for i in range(num_episodes):
+        print('generate_expert_training_data :: episode {}'.format(i))
+        state = env.reset()
+        state = np.reshape(state, (1, state.shape[0]))
+        if render:
+            env.render()
+            time.sleep(.1)
+        is_done = False
+        while not is_done:
+            # print(state.shape)
+            # print(state.shape[0])
+            # print(np.reshape(state, (1, state.shape[0])).shape)
+
+            # action = np.argmax(expert.predict_on_batch(state[np.newaxis, ...])[0])
+            action = np.argmax(expert.predict(state, batch_size=1))
+            # print("action", action)
+            if action == 0:
+                action_one_hot = np.array([[0., 1.]])
+            else:
+                action_one_hot = np.array([[1., 0.]])
+            state, reward, is_done, _ = env.step(action)
+            state = np.reshape(state, (1, state.shape[0]))
+            states_arr = np.append(states_arr, state, axis=0)
+            actions_arr = np.append(actions_arr, action_one_hot, axis=0)
+            # print(state.shape, states_arr.shape)
+            # print(action_one_hot.shape, actions_arr.shape)
+            if render:
+                env.render()
+                time.sleep(.1)
+
+    print(' \n DONE generate_expert_training_data \n')
+    return states_arr, actions_arr
 
 def test_cloned_policy(env, cloned_policy, num_episodes=50, render=True):
     """Run cloned policy and collect statistics on performance.
@@ -98,8 +131,9 @@ def test_cloned_policy(env, cloned_policy, num_episodes=50, render=True):
             'Total reward: {}'.format(total_reward))
         total_rewards.append(total_reward)
 
-    print('Average total reward: {} (std: {})'.format(
-        np.mean(total_rewards), np.std(total_rewards)))
+    print('Average total reward: {} (std: {})'.format(np.mean(total_rewards), np.std(total_rewards)))
+
+    return np.mean(total_rewards), np.std(total_rewards)
 
 
 def wrap_cartpole(env):
@@ -136,3 +170,4 @@ def wrap_cartpole(env):
     unwrapped_env._reset = harder_reset
 
     return env
+
