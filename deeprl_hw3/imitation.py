@@ -6,7 +6,6 @@ from keras.models import model_from_yaml
 import numpy as np
 import time
 
-
 def load_model(model_config_path, model_weights_path=None):
     """Load a saved model.
 
@@ -55,8 +54,27 @@ def generate_expert_training_data(expert, env, num_episodes=100, render=True):
       second contains a one-hot encoding of all of the actions chosen
       by the expert for those states.
     """
-    return np.zeros((4,)), np.zeros((2,))
 
+    states_arr = np.zeros((num_episodes, 4))
+    actions_arr = np.zeros((num_episodes, 2))
+
+    for i in range(num_episodes):
+        print('Starting episode {}'.format(i))
+        state = env.reset()
+        if render:
+            env.render()
+            time.sleep(.1)
+        is_done = False
+        while not is_done:
+            action = np.argmax(expert.predict_on_batch(state[np.newaxis, ...])[0])
+            state, reward, is_done, _ = env.step(action)
+            states_arr[i,:] = state
+            actions_arr[i,:] = action
+            if render:
+                env.render()
+                time.sleep(.1)
+
+    return states_arr, actions_arr
 
 def test_cloned_policy(env, cloned_policy, num_episodes=50, render=True):
     """Run cloned policy and collect statistics on performance.
@@ -98,8 +116,9 @@ def test_cloned_policy(env, cloned_policy, num_episodes=50, render=True):
             'Total reward: {}'.format(total_reward))
         total_rewards.append(total_reward)
 
-    print('Average total reward: {} (std: {})'.format(
-        np.mean(total_rewards), np.std(total_rewards)))
+    print('Average total reward: {} (std: {})'.format(np.mean(total_rewards), np.std(total_rewards)))
+
+    return np.mean(total_rewards), np.std(total_rewards)
 
 
 def wrap_cartpole(env):
