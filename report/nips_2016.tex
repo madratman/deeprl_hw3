@@ -133,7 +133,7 @@ A possible way to maintain the torques within the acceptable range in a real-lif
 
 \subsection{[5pts] Compare the performance on these environments to the v0 versions.}
 
-pass
+The positions obtained in the v1 environments took longer to stabilize than positions in the v0 environment because the torques applied in the v1 system were significantly smaller (around 200 max control versus 10000 max control). This happened because the cost function in the v1 (matrix R) environment penalizes high torques much more heavily than in v0, therefore lower torques are preferred. Despite the slower convergence, both systems were able to reach the end position without much oscillatory behavior.
 
 
 
@@ -160,11 +160,11 @@ Here are our results for the iLQR algorithm. To run it, run the command "python 
 
 \subsection{[5pts] Discuss the comparison between iLQR and LQR algorithm, which one is better and why?}
 
-pass
+The iLQR algorithm is definitely better than the LQR algorithm. This is because the end position of the arm was achieved in about the same time using both algorithms (around t=40), but iLQR used a significantly lower torque to achieve the objective (max torque at about 1000 versus 10000), and presented much smoother movements, without oscillatory behavior. This happens because iLQR predicts the future dynamics of the system in its movements. The downside is the increase in computational time.
 
 \subsection{[5pts EXTRA CREDIT] iLQR is not as fast as we want. Try to improve the convergence in any way you can figure out. Potential directions include changing cost function and use better optimization procedures.}
 
-pass
+We can change the intermediate cost function of iLQR to instead of just penalizing for applying a high control torque, penalize the system for not being close to our final objective. 
 
 
 
