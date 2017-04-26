@@ -55,25 +55,40 @@ def generate_expert_training_data(expert, env, num_episodes=100, render=True):
       by the expert for those states.
     """
 
-    states_arr = np.zeros((num_episodes, 4))
-    actions_arr = np.zeros((num_episodes, 2))
+    states_arr = np.empty((0, 4))
+    actions_arr = np.empty((0, 2))
 
     for i in range(num_episodes):
-        print('Starting episode {}'.format(i))
+        print('generate_expert_training_data :: episode {}'.format(i))
         state = env.reset()
+        state = np.reshape(state, (1, state.shape[0]))
         if render:
             env.render()
             time.sleep(.1)
         is_done = False
         while not is_done:
-            action = np.argmax(expert.predict_on_batch(state[np.newaxis, ...])[0])
+            # print(state.shape)
+            # print(state.shape[0])
+            # print(np.reshape(state, (1, state.shape[0])).shape)
+
+            # action = np.argmax(expert.predict_on_batch(state[np.newaxis, ...])[0])
+            action = np.argmax(expert.predict(state, batch_size=1))
+            # print("action", action)
+            if action == 0:
+                action_one_hot = np.array([[0., 1.]])
+            else:
+                action_one_hot = np.array([[1., 0.]])
             state, reward, is_done, _ = env.step(action)
-            states_arr[i,:] = state
-            actions_arr[i,:] = action
+            state = np.reshape(state, (1, state.shape[0]))
+            states_arr = np.append(states_arr, state, axis=0)
+            actions_arr = np.append(actions_arr, action_one_hot, axis=0)
+            # print(state.shape, states_arr.shape)
+            # print(action_one_hot.shape, actions_arr.shape)
             if render:
                 env.render()
                 time.sleep(.1)
 
+    print(' \n DONE generate_expert_training_data \n')
     return states_arr, actions_arr
 
 def test_cloned_policy(env, cloned_policy, num_episodes=50, render=True):
@@ -155,3 +170,4 @@ def wrap_cartpole(env):
     unwrapped_env._reset = harder_reset
 
     return env
+
