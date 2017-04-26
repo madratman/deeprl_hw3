@@ -275,6 +275,8 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
   sim_new_trajectory = True
   x0=env.state.copy()
 
+  list_of_costs = []
+
   for ii in range(max_iter):
 
       if sim_new_trajectory == True: 
@@ -400,13 +402,14 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
           U = np.copy(Unew) # update control signal
           oldcost = np.copy(cost)
           cost = np.copy(costnew)
-
+          list_of_costs.append(oldcost)
           sim_new_trajectory = True # do another rollout
 
           # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
           #         " logLambda = %.1f"%np.log(lamb))
           # check to see if update is small enough to exit
           if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
+              list_of_costs.append(cost)
               print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
                       " logLambda = %.1f"%np.log(lamb) + " old cost= %.4f"%(oldcost))
               break
@@ -421,4 +424,4 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
                                                     np.log(lamb)))
               break
 
-  return X, U, cost
+  return X, U, cost, list_of_costs
