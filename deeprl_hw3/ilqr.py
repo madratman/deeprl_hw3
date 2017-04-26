@@ -7,10 +7,41 @@ import copy
 from IPython import embed
 
 LAMB_FACTOR=10
-EPS_CONVERGE=0.001
+EPS_CONVERGE=1e-10
 LAMB_MAX=1000
 
-def simulate_dynamics_next(env, x, u, dt):
+def simulate_dynamics_cont(env, x, u, dt=DT):
+  """Step simulator to see how state changes.
+
+  Parameters
+  ----------
+  env: gym.core.Env
+    The environment you are trying to control. In this homework the 2
+    link arm.
+  x: np.array
+    The state to test. When approximating A you will need to perturb
+    this.
+  u: np.array
+    The command to test. When approximating B you will need to
+    perturb this.
+  dt: float, optional
+    The time step to simulate. In general the smaller the time step
+    the more accurate the gradient approximation.
+
+  Returns
+  -------
+  xdot: np.array
+    This is the **CHANGE** in x. i.e. (x[1] - x[0]) / dt
+    If you return x you will need to solve a different equation in
+    your LQR controller.
+  """
+  x_orig = copy.copy(x)
+  env.state = x_orig
+  xnew, _, _, _, = env._step(u, dt)
+  xdot = (xnew - x)/dt
+  return xdot
+
+def simulate_dynamics_next(env, x, u, dt=None):
   """Step simulator to see how state changes.
 
   Parameters
@@ -32,7 +63,7 @@ def simulate_dynamics_next(env, x, u, dt):
 
   x_orig = copy.copy(x)
   env.state = x_orig
-  xnew, _, _, _, = env._step(u, dt)
+  xnew, _, _, _, = env._step(u)
 
   return xnew
 
@@ -112,14 +143,14 @@ def simulate(env, x0, U):
   dt = env.dt
 
   X = np.zeros((tN, num_states))
-  X[0] = x0
+  X[0] = copy.deepcopy(x0)
   cost = 0
 
   # Run simulation with substeps
   for t in range(tN-1):
-      X[t+1] = simulate_dynamics_next(env, X[t], U[t],dt=DT)
+      X[t+1] = simulate_dynamics_next(env, X[t], U[t])
       l,_,_,_,_,_ = cost_inter(X[t], U[t])
-      cost = cost + dt * l
+      cost = cost + dt*l
 
   # Adjust for final cost, subsample trajectory
   l_f,_,_ = cost_final(env,X[-1])
@@ -127,92 +158,92 @@ def simulate(env, x0, U):
   return X, cost
 
 def approximate_A(env, x, u, delta=DELTA, dt=DT):
-  """Approximate A matrix using finite differences.
+    """Approximate A matrix using finite differences.
 
-  Parameters
-  ----------
-  env: gym.core.Env
-    The environment you are try to control. In this homework the 2
-    link arm.
-  x: np.array
-    The state to test. You will need to perturb this.
-  u: np.array
-    The command to test.
-  delta: float
-    How much to perturb the state by.
-  dt: float, optional
-    The time step to simulate. In general the smaller the time step
-    the more accurate the gradient approximation.
+    Parameters
+    ----------
+    env: gym.core.Env
+      The environment you are try to control. In this homework the 2
+      link arm.
+    x: np.array
+      The state to test. You will need to perturb this.
+    u: np.array
+      The command to test.
+    delta: float
+      How much to perturb the state by.
+    dt: float, optional
+      The time step to simulate. In general the smaller the time step
+      the more accurate the gradient approximation.
 
-  Returns
-  -------
-  A: np.array
-    The A matrix for the dynamics at state x and command u.
-  """
-  x_orig = copy.copy(x)
+    Returns
+    -------
+    A: np.array
+      The A matrix for the dynamics at state x and command u.
+    """
+    x_orig = copy.copy(x)
 
-  # initialize matrix A
-  A = np.zeros([env.observation_space.shape[0],env.observation_space.shape[0]])
+    # initialize matrix A
+    A = np.zeros([env.observation_space.shape[0],env.observation_space.shape[0]])
 
-  for i in range(env.observation_space.shape[0]):
+    for i in range(env.observation_space.shape[0]):
 
-    x_perturbed = copy.copy(x_orig)
-    x_perturbed[i] += delta
-    x_1 = simulate_dynamics_next(env, x_perturbed, u, dt=DT)
+      x_perturbed = copy.copy(x_orig)
+      x_perturbed[i] += delta
+      x_dot1 = simulate_dynamics_cont(env, x_perturbed, u, dt=DT)
 
-    x_perturbed = copy.copy(x_orig)
-    x_perturbed[i] -= delta
-    x_2 = simulate_dynamics_next(env, x_perturbed, u, dt=DT)
+      x_perturbed = copy.copy(x_orig)
+      x_perturbed[i] -= delta
+      x_dot2 = simulate_dynamics_cont(env, x_perturbed, u, dt=DT)
 
-    delta_x = (x_1 - x_2)/(2*delta)
-    A[:,i] = delta_x
-    # comment
-  return A
+      delta_x = (x_dot1 - x_dot2)/(2*delta)
+      A[:,i] = delta_x
+      # comment
+    return A
 
 def approximate_B(env, x, u, delta=DELTA, dt=DT):
-  """Approximate B matrix using finite differences.
+    """Approximate B matrix using finite differences.
 
-  Parameters
-  ----------
-  env: gym.core.Env
-    The environment you are try to control. In this homework the 2
-    link arm.
-  x: np.array
-    The state to test.
-  u: np.array
-    The command to test. You will ned to perturb this.
-  delta: float
-    How much to perturb the state by.
-  dt: float, optional
-    The time step to simulate. In general the smaller the time step
-    the more accurate the gradient approximation.
+    Parameters
+    ----------
+    env: gym.core.Env
+      The environment you are try to control. In this homework the 2
+      link arm.
+    x: np.array
+      The state to test.
+    u: np.array
+      The command to test. You will ned to perturb this.
+    delta: float
+      How much to perturb the state by.
+    dt: float, optional
+      The time step to simulate. In general the smaller the time step
+      the more accurate the gradient approximation.
 
-  Returns
-  -------
-  B: np.array
-    The B matrix for the dynamics at state x and command u.
-  """
-  u_orig = copy.copy(u)
+    Returns
+    -------
+    B: np.array
+      The B matrix for the dynamics at state x and command u.
+    """
+    u_orig = copy.copy(u)
 
-  # initialize matrix B
-  B = np.zeros([env.observation_space.shape[0],env.action_space.shape[0]])
+    # initialize matrix B
+    B = np.zeros([env.observation_space.shape[0],env.action_space.shape[0]])
 
-  for i in range(env.action_space.shape[0]):
+    for i in range(env.action_space.shape[0]):
 
-    u_perturbed = copy.copy(u_orig)
-    u_perturbed[i] += delta
-    x_1 = simulate_dynamics_next(env, x, u_perturbed, dt=DT)
+      u_perturbed = copy.copy(u_orig)
+      u_perturbed[i] += delta
+      x_dot1 = simulate_dynamics_cont(env, x, u_perturbed, dt=DT)
 
-    u_perturbed = copy.copy(u_orig)
-    u_perturbed[i] -= delta
-    x_2 = simulate_dynamics_next(env, x, u_perturbed, dt=DT)
+      u_perturbed = copy.copy(u_orig)
+      u_perturbed[i] -= delta
+      x_dot2 = simulate_dynamics_cont(env, x, u_perturbed, dt=DT)
 
-    delta_x = (x_1-x_2)/(2*delta)
-    B[:,i] = delta_x
+      delta_x = (x_dot1-x_dot2)/(2*delta)
+      B[:,i] = delta_x
 
-  return B
+    return B
 
-def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
+def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
   """Calculate the optimal control input for the given state.
 
 
@@ -237,12 +268,12 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
   # tN = U.shape[0] # number of time steps
   dof = 2 # number of degrees of freedom of plant 
   U = np.zeros((tN, dof))
-  x0 = np.zeros(dof*2)
   num_states = dof * 2 # number of states (position and velocity)
-  dt = env.dt # time step
+  dt = copy.copy(env.dt) # time step
 
   lamb = 1.0 # regularization parameter
   sim_new_trajectory = True
+  x0=env.state.copy()
 
   for ii in range(max_iter):
 
@@ -350,31 +381,35 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6):
           # to take a stab at the optimal control signal
           Unew[t] = U[t] + k[t] + np.dot(K[t], xnew - X[t]) # 7b)
           # given this u, find our next state
-          xnew = simulate_dynamics_next(sim_env,xnew, Unew[t],dt=DT) # 7c)
+          xnew = simulate_dynamics_next(sim_env,xnew, Unew[t]) # 7c)
 
       # evaluate the new trajectory 
       Xnew, costnew = simulate(sim_env, x0, Unew)
 
       # Levenberg-Marquardt heuristic
+      
+      print "ii=%d"%ii
+      print "cost=%.4f"%cost
+      print "costnew=%.4f"%costnew
+
       if costnew < cost: 
-        # decrease lambda (get closer to Newton's method)
-        lamb /= LAMB_FACTOR
+          # decrease lambda (get closer to Newton's method)
+          lamb /= LAMB_FACTOR
 
-        X = copy.copy(Xnew) # update trajectory 
-        U = copy.copy(Unew) # update control signal
-        oldcost = copy.copy(cost)
-        cost = copy.copy(costnew)
+          X = np.copy(Xnew) # update trajectory 
+          U = np.copy(Unew) # update control signal
+          oldcost = np.copy(cost)
+          cost = np.copy(costnew)
 
-        sim_new_trajectory = True # do another rollout
+          sim_new_trajectory = True # do another rollout
 
-        # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
-        #         " logLambda = %.1f"%np.log(lamb))
-        # check to see if update is small enough to exit
-        # embed()
-        if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
-            print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
-                    " logLambda = %.1f"%np.log(lamb))
-            break
+          # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
+          #         " logLambda = %.1f"%np.log(lamb))
+          # check to see if update is small enough to exit
+          if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
+              print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
+                      " logLambda = %.1f"%np.log(lamb) + " old cost= %.4f"%(oldcost))
+              break
 
       else: 
           # increase lambda (get closer to gradient descent)
