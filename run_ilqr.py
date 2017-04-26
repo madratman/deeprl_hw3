@@ -6,7 +6,7 @@ from deeprl_hw3.ilqr import calc_ilqr_input
 import copy
 import time
 
-env_name = 'TwoLinkArm-random-goal-v0'
+env_name = 'TwoLinkArm-v0'
 env = gym.make(env_name)
 sim_env = gym.make(env_name)
 initial_state = env.reset()
@@ -19,7 +19,7 @@ max_iter=100
 
 x0 = copy.copy(env.state)
 
-X, U, cost = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter)
+X, U, cost = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter, x0=x0)
 
 for i in range(tN):
 
