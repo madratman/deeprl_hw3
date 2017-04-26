@@ -4,6 +4,7 @@ import numpy as np
 import scipy.linalg
 from deeprl_hw3.controllers import DELTA, DT
 import copy
+from IPython import embed
 
 LAMB_FACTOR=10
 EPS_CONVERGE=1e-10
@@ -279,7 +280,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
       if sim_new_trajectory == True: 
           # simulate forward using the current control trajectory
           X, cost = simulate(sim_env,x0, U)
-          oldcost = np.copy(cost) # copy for exit condition check
+          oldcost = copy.copy(cost) # copy for exit condition check
 
           # now we linearly approximate the dynamics, and quadratically 
           # approximate the cost function so we can use LQR methods 
@@ -314,7 +315,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
               l_u[t] *= dt
               l_uu[t] *= dt
               l_ux[t] *= dt
-          # aaaand for final state
+
           l[-1], l_x[-1], l_xx[-1] = cost_final(sim_env,X[-1])
 
           sim_new_trajectory = False
@@ -383,7 +384,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
           xnew = simulate_dynamics_next(sim_env,xnew, Unew[t]) # 7c)
 
       # evaluate the new trajectory 
-      Xnew, costnew = simulate(sim_env,x0, Unew)
+      Xnew, costnew = simulate(sim_env, x0, Unew)
 
       # Levenberg-Marquardt heuristic
       
