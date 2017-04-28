@@ -53,15 +53,11 @@ def reinforce(env, model):
     """
     ALPHA = 1e-4 # SGD Learning rate
 
-    opt = tf.train.AdamOptimizer(ALPHA)
-
     action_taken = tf.placeholder(tf.int32, shape=(), name='action_taken')
     G_t_var = tf.placeholder(tf.float32, shape=(), name='G_t')
 
     relevant_pi = tf.gather(tf.transpose(model.output), action_taken)
-
-    grads = opt.compute_gradients(-G_t_var * tf.log(relevant_pi))
-    update_op = opt.apply_gradients(grads)
+    update_op = tf.train.AdamOptimizer(ALPHA).minimize(-G_t_var * tf.log(relevant_pi))
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
