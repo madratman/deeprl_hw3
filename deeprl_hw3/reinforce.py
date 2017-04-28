@@ -21,7 +21,7 @@ def get_total_reward(env, model):
     return 0.0
 
 
-def choose_action(model, observation):
+def choose_action(model, observation, sess):
     """choose the action
 
     Parameters
@@ -36,16 +36,8 @@ def choose_action(model, observation):
     action: int
         the action you choose
     """
-    output = model.predict(np.array([observation]))[0]
-    #if output[1] < output[0]:
-    p = np.random.uniform()
-    if p < output[0]:
-      action = 0
-    else:
-      action = 1
-
-    #print(observation, output[0], output[1], p, action)
-    return output[1], action
+    output = sess.run(model.output, feed_dict={model.input : np.array([observation])})[0]
+    return output[1], np.random.uniform() > output[0]
 
 
 def reinforce(env, model):
@@ -59,21 +51,20 @@ def reinforce(env, model):
     -------
     total_reward: float
     """
-    ALPHA = 0.01 # SGD Learning rate
+    ALPHA = 1e-4 # SGD Learning rate
 
-    opt = tf.train.GradientDescentOptimizer(ALPHA)
-    #opt = tf.train.AdamOptimizer(ALPHA)
+    opt = tf.train.AdamOptimizer(ALPHA)
 
-    action_taken = tf.placeholder(tf.int32, shape=[], name='action_taken')
-    relevant_pi = tf.transpose(tf.gather(tf.transpose(model.output), action_taken))
-    grads = opt.compute_gradients(tf.log(relevant_pi))
-
+    action_taken = tf.placeholder(tf.int32, shape=(), name='action_taken')
     G_t_var = tf.placeholder(tf.float32, shape=(), name='G_t')
-    scaled_grads = [(-G_t_var * grad, var) for grad, var in grads]
-    update_op = opt.apply_gradients(scaled_grads)
+
+    relevant_pi = tf.gather(tf.transpose(model.output), action_taken)
+
+    grads = opt.compute_gradients(-G_t_var * tf.log(relevant_pi))
+    update_op = opt.apply_gradients(grads)
 
     sess = tf.Session()
-    sess.run(tf.initialize_all_variables())
+    sess.run(tf.global_variables_initializer())
 
     state = env.reset()
 
@@ -82,8 +73,8 @@ def reinforce(env, model):
 
     rewards = []
     episode_no = 1
-    while episode_no < 2500:
-      prob, action = choose_action(model, state)
+    while episode_no < 800:
+      prob, action = choose_action(model, state, sess)
       next_state, reward, done, info = env.step(action)
 
       episode.append((state, action, reward))
@@ -93,6 +84,7 @@ def reinforce(env, model):
         episode_no += 1
         print(len(episode))
         rewards.append(len(episode))
+
         # Train
         G_t = 0 # The return
         for state, action, reward in episode[::-1]:
@@ -103,9 +95,6 @@ def reinforce(env, model):
         state = env.reset()
         episode = []
 
-        if not episode_no % 100:
-          print(sess.run(model.trainable_weights))
-
     return rewards
 
 if __name__ == "__main__":
@@ -115,7 +104,7 @@ if __name__ == "__main__":
 
   env = gym.make("CartPole-v0")
 
-  config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "CartPole-v0_config-small.yaml")
+  config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "CartPole-v0_config.yaml")
   model = load_model(config_path)
 
   rewards = reinforce(env, model)
