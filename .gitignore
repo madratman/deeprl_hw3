@@ -3,3 +3,10 @@
 */lib
 */lib64
 */pyvenv.cfg
+*.out
+*.log
+*.aux
+*.pdf
+*.blg
+*.bbl
+*.gz
