@@ -10,6 +10,9 @@ LAMB_FACTOR=10
 EPS_CONVERGE=1e-10
 LAMB_MAX=1000
 
+# reference for this code: StudyWolf blog, found at https://studywolf.wordpress.com/2016/02/03/the-iterative-linear-quadratic-regulator-method/
+
+
 def simulate_dynamics_cont(env, x, u, dt=DT):
   """Step simulator to see how state changes.
 
@@ -41,6 +44,7 @@ def simulate_dynamics_cont(env, x, u, dt=DT):
   xdot = (xnew - x)/dt
   return xdot
 
+
 def simulate_dynamics_next(env, x, u, dt=None):
   """Step simulator to see how state changes.
 
@@ -67,95 +71,6 @@ def simulate_dynamics_next(env, x, u, dt=None):
 
   return xnew
 
-
-def cost_inter(x, u):
-  """intermediate cost function
-
-  Parameters
-  ----------
-  env: gym.core.Env
-    The environment you are try to control. In this homework the 2
-    link arm.
-  x: np.array
-    The state to test. When approximating A you will need to perturb
-    this.
-  u: np.array
-    The command to test. When approximating B you will need to
-    perturb this.
-
-  Returns
-  -------
-  l, l_x, l_xx, l_u, l_uu, l_ux. The first term is the loss, where the remaining terms are derivatives respect to the
-  corresponding variables, ex: (1) l_x is the first order derivative d l/d x (2) l_xx is the second order derivative
-  d^2 l/d x^2
-  """
-  dof = u.shape[0]
-  num_states = x.shape[0]
-
-  l = np.sum(u**2)
-  # maybe change the cost function later to include how far away we are from the desired state (have to include input with Xgoal in this function)
-
-  # compute derivatives of cost
-  l_x = np.zeros(num_states)
-  l_xx = np.zeros((num_states, num_states))
-  l_u = 2 * u
-  l_uu = 2 * np.eye(dof)
-  l_ux = np.zeros((dof, num_states))
-
-  # returned in an array for easy multiplication by time step 
-  return l, l_x, l_xx, l_u, l_uu, l_ux
-
-
-def cost_final(env, x):
-  """cost function of the last step
-
-  Parameters
-  ----------
-  env: gym.core.Env
-    The environment you are try to control. In this homework the 2
-    link arm.
-  x: np.array
-    The state to test. When approximating A you will need to perturb
-    this.
-
-  Returns
-  -------
-  l, l_x, l_xx The first term is the loss, where the remaining terms are derivatives respect to the
-  corresponding variables
-  """
-  num_states = x.shape[0]
-  l_x = np.zeros((num_states))
-  l_xx = np.zeros((num_states, num_states))
-
-  weight = 1e4 # terminal position cost weight
-
-  err = env.state-env.goal
-  l = weight*np.sum(err**2)
-
-  l_x = 2*weight*(err)
-  l_xx = 2 * weight * np.eye(4)
-  # Final cost only requires these three values
-  return l, l_x, l_xx
-
-def simulate(env, x0, U):
-  tN = U.shape[0]
-  num_states = x0.shape[0]
-  dt = env.dt
-
-  X = np.zeros((tN, num_states))
-  X[0] = copy.deepcopy(x0)
-  cost = 0
-
-  # Run simulation with substeps
-  for t in range(tN-1):
-      X[t+1] = simulate_dynamics_next(env, X[t], U[t])
-      l,_,_,_,_,_ = cost_inter(X[t], U[t])
-      cost = cost + dt*l
-
-  # Adjust for final cost, subsample trajectory
-  l_f,_,_ = cost_final(env,X[-1])
-  cost = cost + l_f
-  return X, cost
 
 def approximate_A(env, x, u, delta=DELTA, dt=DT):
     """Approximate A matrix using finite differences.
@@ -243,6 +158,91 @@ def approximate_B(env, x, u, delta=DELTA, dt=DT):
 
     return B
 
+def cost_inter(x, u):
+  """intermediate cost function
+
+  Parameters
+  ----------
+  env: gym.core.Env
+    The environment you are try to control. In this homework the 2
+    link arm.
+  x: np.array
+    The state to test. When approximating A you will need to perturb
+    this.
+  u: np.array
+    The command to test. When approximating B you will need to
+    perturb this.
+
+  Returns
+  -------
+  l, l_x, l_xx, l_u, l_uu, l_ux. The first term is the loss, where the remaining terms are derivatives respect to the
+  corresponding variables, ex: (1) l_x is the first order derivative d l/d x (2) l_xx is the second order derivative
+  d^2 l/d x^2
+  """
+  
+  # cost
+  l = np.sum(u**2)
+  
+  # derivarives of the cost
+  action_space = u.shape[0]
+  state_space = x.shape[0]
+
+  l_x = np.zeros(state_space)
+  l_xx = np.zeros((state_space, state_space))
+  l_u = 2 * u
+  l_uu = 2 * np.eye(action_space)
+  l_ux = np.zeros((action_space, state_space))
+
+  return l, l_x, l_xx, l_u, l_uu, l_ux
+
+
+def cost_final(env, x):
+  """cost function of the last step
+
+  Parameters
+  ----------
+  env: gym.core.Env
+    The environment you are try to control. In this homework the 2
+    link arm.
+  x: np.array
+    The state to test. When approximating A you will need to perturb
+    this.
+
+  Returns
+  -------
+  l, l_x, l_xx The first term is the loss, where the remaining terms are derivatives respect to the
+  corresponding variables
+  """
+  weight = 1e4
+  
+  err = env.state-env.goal
+  l = weight*np.sum(err**2)
+
+  l_x = 2*weight*(err)
+  l_xx = 2 * weight * np.eye(4)
+
+  return l, l_x, l_xx
+
+
+def simulate(env, x0, U):
+  tN = U.shape[0]
+  state_space = x0.shape[0]
+  dt = env.dt
+
+  X = np.zeros((tN, state_space))
+  X[0] = copy.deepcopy(x0)
+  cost = 0
+
+  for t in range(tN-1):
+      X[t+1] = simulate_dynamics_next(env, X[t], U[t])
+      l,_,_,_,_,_ = cost_inter(X[t], U[t])
+      cost = cost + dt*l
+
+  l_f,_,_ = cost_final(env,X[-1])
+  cost = cost + l_f
+
+  return X, cost
+
 def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
   """Calculate the optimal control input for the given state.
 
@@ -265,13 +265,14 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
     The SEQUENCE of commands to execute. The size should be (tN, #parameters)
   """
 
-  # tN = U.shape[0] # number of time steps
-  dof = 2 # number of degrees of freedom of plant 
-  U = np.zeros((tN, dof))
-  num_states = dof * 2 # number of states (position and velocity)
-  dt = copy.copy(env.dt) # time step
-
-  lamb = 1.0 # regularization parameter
+  action_space = 2 
+  state_space = 4
+  dt = copy.copy(env.dt)
+  regularization_variable = 1.0
+  
+  # initial guess for the control sequence U
+  U = np.zeros((tN, action_space)) 
+  
   sim_new_trajectory = True
   x0=env.state.copy()
 
@@ -289,15 +290,15 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
 
           # for storing linearized dynamics
           # x(t+1) = f(x(t), u(t))
-          f_x = np.zeros((tN, num_states, num_states)) # df / dx
-          f_u = np.zeros((tN, num_states, dof)) # df / du
+          f_x = np.zeros((tN, state_space, state_space)) # df / dx
+          f_u = np.zeros((tN, state_space, action_space)) # df / du
           # for storing quadratized cost function 
           l = np.zeros((tN,1)) # immediate state cost 
-          l_x = np.zeros((tN, num_states)) # dl / dx
-          l_xx = np.zeros((tN, num_states, num_states)) # d^2 l / dx^2
-          l_u = np.zeros((tN, dof)) # dl / du
-          l_uu = np.zeros((tN, dof, dof)) # d^2 l / du^2
-          l_ux = np.zeros((tN, dof, num_states)) # d^2 l / du / dx
+          l_x = np.zeros((tN, state_space)) # dl / dx
+          l_xx = np.zeros((tN, state_space, state_space)) # d^2 l / dx^2
+          l_u = np.zeros((tN, action_space)) # dl / du
+          l_uu = np.zeros((tN, action_space, action_space)) # d^2 l / du^2
+          l_ux = np.zeros((tN, action_space, state_space)) # d^2 l / du / dx
           # for everything except final state
           for t in range(tN-1):
               # x(t+1) = f(x(t), u(t)) = x(t) + dx(t) * dt
@@ -306,7 +307,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
               # f_u = B(t)
               A = approximate_A(sim_env,X[t], U[t])
               B = approximate_B(sim_env,X[t], U[t])
-              f_x[t] = np.eye(num_states) + A * dt
+              f_x[t] = np.eye(state_space) + A * dt
               f_u[t] = B * dt
           
               (l[t], l_x[t], l_xx[t], l_u[t], 
@@ -327,8 +328,8 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
       V = l[-1].copy() # value function
       V_x = l_x[-1].copy() # dV / dx
       V_xx = l_xx[-1].copy() # d^2 V / dx^2
-      k = np.zeros((tN, dof)) # feedforward modification
-      K = np.zeros((tN, dof, num_states)) # feedback gain
+      k = np.zeros((tN, action_space)) # feedforward modification
+      K = np.zeros((tN, action_space, state_space)) # feedback gain
 
       # NOTE: they use V' to denote the value at the next timestep, 
       # they have this redundant in their notation making it a 
@@ -359,7 +360,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
           # Levenberg-Marquardt heuristic (at end of this loop)
           Q_uu_evals, Q_uu_evecs = np.linalg.eig(Q_uu)
           Q_uu_evals[Q_uu_evals < 0] = 0.0
-          Q_uu_evals += lamb
+          Q_uu_evals += regularization_variable
           Q_uu_inv = np.dot(Q_uu_evecs, 
                   np.dot(np.diag(1.0/Q_uu_evals), Q_uu_evecs.T))
 
@@ -374,7 +375,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
           # 6c) V_xx = Q_xx - np.dot(-K^T, np.dot(Q_uu, K))
           V_xx = Q_xx - np.dot(K[t].T, np.dot(Q_uu, K[t]))
 
-      Unew = np.zeros((tN, dof))
+      Unew = np.zeros((tN, action_space))
       # calculate the optimal change to the control trajectory
       xnew = x0.copy() # 7a)
       for t in range(tN - 1): 
@@ -396,7 +397,7 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
 
       if costnew < cost: 
           # decrease lambda (get closer to Newton's method)
-          lamb /= LAMB_FACTOR
+          regularization_variable /= LAMB_FACTOR
 
           X = np.copy(Xnew) # update trajectory 
           U = np.copy(Unew) # update control signal
@@ -411,17 +412,17 @@ def calc_ilqr_input(env, sim_env, tN=50, max_iter=1e6, x0=None):
           if ii > 0 and ((abs(oldcost-cost)/cost) < EPS_CONVERGE):
               list_of_costs.append(cost)
               print("Converged at iteration = %d; Cost = %.4f;"%(ii,costnew) + 
-                      " logLambda = %.1f"%np.log(lamb) + " old cost= %.4f"%(oldcost))
+                      " logLambda = %.1f"%np.log(regularization_variable) + " old cost= %.4f"%(oldcost))
               break
 
       else: 
           # increase lambda (get closer to gradient descent)
-          lamb *= LAMB_FACTOR
+          regularization_variable *= LAMB_FACTOR
           # print("cost: %.4f, increasing lambda to %.4f")%(cost, lamb)
-          if lamb > LAMB_MAX: 
+          if regularization_variable > LAMB_MAX: 
               print("lambda > max_lambda at iteration = %d;"%ii + 
                   " Cost = %.4f; logLambda = %.1f"%(cost, 
-                                                    np.log(lamb)))
+                                                    np.log(regularization_variable)))
               break
 
   return X, U, cost, list_of_costs
