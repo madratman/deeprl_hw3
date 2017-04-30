@@ -187,11 +187,15 @@ pass
 
 
 \section{REINFORCE}
-Here are our results for the REINFORCE algorithm. 
 
 \subsection{[10pts] Train REINFORCE on CartPole-v0 until convergence. Show your learning curves for the agent. In other words, every k episodes, freeze the current cloned policy and run 100 test episodes. Average the total reward and track the min and max reward. Plot the total reward on the y-axis with min/max values as error-bars vs the number of training episodes.}
 
-pass
+Below are the training results. We use the provided Keras model architecture and train using the Adam Optimizer with a learning rate of $0.00025$. The policy is evaluted for 100 episodes every 20 training episodes. The average reward is plotted along with the minimum and maximum for every 100 test episodes.
+
+The instability is largely due to the overcomplicated model architecture. A simple one layer network trains in many less episodes with better performance.
+\begin{center}
+  \includegraphics[width=12cm]{images/reinforce_plot.pdf}
+\end{center}
 
 \subsection{[10pts] How does this policy compare to our provided expert and your cloned models?}
 
