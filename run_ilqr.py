@@ -8,7 +8,7 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-env_name = 'TwoLinkArm-v0'
+env_name = 'TwoLinkArm-v1'
 env = gym.make(env_name)
 sim_env = gym.make(env_name)
 initial_state = env.reset()

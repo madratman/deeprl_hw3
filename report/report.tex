@@ -88,6 +88,9 @@ Here are our results for the LQR algorithm. To run it, run the command "python r
 
 \subsection{[5pts] Test your LQR implementation on the TwoLinkArm-v0 environment. Record the total reward and number of steps to reach the goal. Also plot $q$, $\dot{q}$, and your control inputs $u$}
 
+num\_steps=135
+reward=-313.459702915
+
 \begin{figure}[H] \label{fig:lqr_qn1}
   \centering
   \includegraphics[width=1.2\textwidth]{images/lqr_qn1}
@@ -95,6 +98,8 @@ Here are our results for the LQR algorithm. To run it, run the command "python r
 \end{figure}
 
 \subsection{[5pts] Test your LQR implementation on the TwoLinkArm-limited-torque-v0 environment. Record the total reward and the number of steps to reach the goal. Also plot $q$, $\dot{q}$, and your control inputs $u$. Additionally plot u clipped to the action space of this environment.}
+
+num\_steps=2682, reward=-8912.41442527
 
 \begin{figure}[H] \label{fig:lqr_qn2}
   \centering
@@ -111,6 +116,8 @@ A possible way to maintain the torques within the acceptable range in a real-lif
 
 \subsection{[5pts] Test your LQR implementation on the TwoLinkArm-v1 environment. Record the total reward and number of steps to reach the goal. Also plot $q$, $\dot{q}$, and your control inputs $u$}
 
+num\_steps=621, reward=-1788.50332694
+
 \begin{figure}[H] \label{fig:lqr_qn4}
   \centering
   \includegraphics[width=1.2\textwidth]{images/lqr_qn4}
@@ -118,6 +125,8 @@ A possible way to maintain the torques within the acceptable range in a real-lif
 \end{figure}
 
 \subsection{[5pts] Test your LQR implementation on the TwoLinkArm-limited-torque-v1 environment. Record the total reward and the number of steps to reach the goal. Also plot $q$, $\dot{q}$, and your control inputs $u$. Additionally plot u clipped to the action space of this environment.}
+
+num\_steps=1190, reward=-2704.41159978
 
 \begin{figure}[H] \label{fig:lqr_qn5}
   \centering
@@ -130,13 +139,13 @@ A possible way to maintain the torques within the acceptable range in a real-lif
 The positions obtained in the v1 environments took longer to stabilize than positions in the v0 environment because the torques applied in the v1 system were significantly smaller (around 200 max control versus 10000 max control). This happened because the cost function in the v1 (matrix R) environment penalizes high torques much more heavily than in v0, therefore lower torques are preferred. Despite the slower convergence, both systems were able to reach the end position without much oscillatory behavior.
 
 
-
-
-
 \section{iLQR}
-Here are our results for the iLQR algorithm. To run it, run the command "python run\_ilqr.py". Inside the "run\_ilqr.py" script the user can change the type of environment.
+Here are our results for the iLQR algorithm. To run it, run the command "python run\_ilqr.py". Inside the "run\_ilqr.py" script the user can change the type of environment. 
+A reference for our code was the StudyWolf blog, available at https://studywolf.wordpress.com/2016/02/03/the-iterative-linear-quadratic-regulator-method/
 
 \subsection{[10pts] Test your iLQR implementation on the TwoLinkArm-v0 environment. Plot the total cost (intermediate cost + final cost) respect to iterations and record the total reward. Also plot $q$, $\dot{q}$, and your control inputs $u$.}
+
+reward=-333.314787036
 
 \begin{figure}[H] \label{fig:ilqr_qn1}
   \centering
@@ -145,6 +154,8 @@ Here are our results for the iLQR algorithm. To run it, run the command "python 
 \end{figure}
 
 \subsection{[10pts] Test your iLQR implementation on the TwoLinkArm-v1 environment. Plot the total cost (intermediate cost + final cost) respect to iterations and record the total reward. Also plot $q$, $\dot{q}$, and your control inputs $u$.}
+
+reward=-14352.1694183
 
 \begin{figure}[H] \label{fig:ilqr_qn2}
   \centering
@@ -159,7 +170,6 @@ The iLQR algorithm is definitely better than the LQR algorithm. This is because 
 \subsection{[5pts EXTRA CREDIT] iLQR is not as fast as we want. Try to improve the convergence in any way you can figure out. Potential directions include changing cost function and use better optimization procedures.}
 
 We can change the intermediate cost function of iLQR to instead of just penalizing for applying a high control torque, penalize the system for not being close to our final objective. 
-
 
 
 
