@@ -174,15 +174,76 @@ Here are our results for the behavior cloning algorithm.
 
 \subsection{[10pts] Use each of your datasets to train a cloned behavior using the dataset as a supervised learning problem. Record the final loss and accuracy of your model after training for at least 50 epochs. Make sure you include any hyper parameters in your report}
 
-pass
+\begin{table}[H]
+\centering
+\caption{Results}
+\label{my-label}
+\begin{tabular}{ccc}
+\textbf{No of episodes} & \textbf{Loss}  & \textbf{Accuracy} \\
+1                       & 0.280591886044 & 0.8650    \\
+10                     & 0.104798256934 & 0.9575   \\
+50                     & 0.0489679535789 & 0.9815   \\
+100                   & 0.0508819897211 & 0.9786
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering
+\caption{Hyperparams}
+\label{my-label}
+\begin{tabular}{cc}
+Optimizer  & 'Adam'                 \\
+Loss       & 'binary\_crossentropy' \\
+Batch size & 32                     \\
+Epochs     & 50                    
+\end{tabular}
+\end{table}
+
 
 \subsection{[[10pts] Evaluate each of your cloned models on the CartPole-v0 model using the test cloned policy method. How does the amount of training data affect the cloned policy?}
 
-pass
+\begin{table}[H]
+\centering
+\caption{Results on normal environment}
+\label{my-label}
+\begin{tabular}{ccc}
+No of episodes & Mean reward & Standard deviation \\
+1              & 127.22       & 63.24    \\
+10            & 200.00       & 0.00      \\
+50            & 200.00       & 0.00    \\
+100          & 200.00       & 0.00     
+\end{tabular}
+\end{table}
+
+Expert:
+Mean reward : 200.0
+Std : 0.0
+
+If we train on only single episode, the cloned policy performs poorly. However, for all the other three cases, the cloned policy exhibits the optimal performance regardless of the amount of training data used. 
 
 \subsection{[10pts] Evaluate each of your cloned models on the CartPole-v0 domain wrapped with the wrap cartpole function. Also evaluate the expert policy. How does your cloned behavior compare with respect to the expert policies and each other.}
 
-pass
+\begin{table}[H]
+\centering
+\caption{Results on noisy environment}
+\label{my-label}
+\begin{tabular}{ccc}
+No of episodes & Mean reward & Standard deviation \\
+1            & 13.88       & 9.33946465275      \\
+10           & 64.94       & 56.4508317034      \\
+50           & 75.40       & 72.7403601861      \\
+100          & 77.04       & 77.6193171833      
+\end{tabular}
+\end{table}
+
+Expert:
+Mean reward : 70.58
+Std : 46.62
+
+As episode length increases, the mean reward increases along with standard devaition. 
+Cloned models trained on 50 and 100 episodes do better than the expert, however with a greater amount of standard deviation of the reward. 
+
 
 
 

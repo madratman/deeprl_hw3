@@ -24,7 +24,8 @@ if __name__=='__main__':
 	LINE = "%s%s##############################################################################%s" % (RED, BOLD, ENDC)
 
 	env = gym.make('CartPole-v0')
-	env_wrap = imitation.wrap_cartpole(env)
+	env_wrap = gym.make('CartPole-v0')
+	env_wrap = imitation.wrap_cartpole(env_wrap)
 
 	expert = imitation.load_model('CartPole-v0_config.yaml', 'CartPole-v0_weights.h5f')
 	# test_cloned_policy(env, cloned_policy)
