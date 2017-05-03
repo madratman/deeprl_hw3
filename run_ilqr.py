@@ -15,19 +15,17 @@ initial_state = env.reset()
 
 total_cost = 0
 num_steps = 0
-tN = 75
+tN = 50
 max_iter = 100
 
 x0 = copy.copy(env.state)
-
-#X, U, cost, list_of_costs = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter, x0=x0)
-u = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter, x0=x0)
+X, U, cost, list_of_costs = calc_ilqr_input(env, sim_env, tN=tN, max_iter=max_iter, x0=x0)
 
 R = []
 
 for i in range(tN):
-  print("Control u = {}, reward={}".format(str(u[i, :]), total_cost))
-  x_next, cost_i, is_terminal, debug_info = env.step(u[i, :])
+  print("Control u = {}, reward={}".format(str(U[i]), total_cost))
+  x_next, cost_i, is_terminal, debug_info = env.step(U[i])
   env.render()
 
   total_cost += cost_i
