@@ -57,12 +57,6 @@
   Carnegie Mellon University\\
   Pittsburgh, PA 15213 \\
   \texttt{amurali@andrew.cmu.edu} \\
-  \And
-  Alex~Spitzer\ \\
-  Robotics Institute\\
-  Carnegie Mellon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{aspitzer@andrew.cmu.edu} \\
   %% \AND
   %% Coauthor \\
   %% Affiliation \\
@@ -191,7 +185,7 @@ Here are our results for the behavior cloning algorithm.
 \begin{table}[H]
 \centering
 \caption{Hyperparams}
-\label{my-label}
+\label{my-label2}
 \begin{tabular}{cc}
 Optimizer  & 'Adam'                 \\
 Loss       & 'binary\_crossentropy' \\
@@ -206,7 +200,7 @@ Epochs     & 50
 \begin{table}[H]
 \centering
 \caption{Results on normal environment}
-\label{my-label}
+\label{my-label3}
 \begin{tabular}{ccc}
 No of episodes & Mean reward & Standard deviation \\
 1              & 127.22       & 63.24    \\
@@ -227,7 +221,7 @@ If we train on only single episode, the cloned policy performs poorly. However, 
 \begin{table}[H]
 \centering
 \caption{Results on noisy environment}
-\label{my-label}
+\label{my-label4}
 \begin{tabular}{ccc}
 No of episodes & Mean reward & Standard deviation \\
 1            & 13.88       & 9.33946465275      \\
@@ -260,8 +254,7 @@ The instability is largely due to the overcomplicated model architecture. A simp
 
 \subsection{[10pts] How does this policy compare to our provided expert and your cloned models?}
 
-pass
-
+Although this policy can achieve a perfect episode of 200 reward, it is not as stable as the provided expert nor the cloned models when evaluated on the default CartPole-v0 environment. Since the policy is stochastic, it can exhibit poor performance as evalauted during training. If the policy was followed deterministically (by using an argmax) the reward will likely have less variance and stay closer to a reward of 200. More iterations of REINFORCE, perhaps with a decaying gradient descent step size, as well as adding a baseline state value function, might reduce the variance over time.
 
 % \section*{References}
 
